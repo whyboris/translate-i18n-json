@@ -1,0 +1,16 @@
+{
+  "name": "translate-i18n-json",
+  "version": "0.1.0",
+  "description": "translate strings inside JSON files; useful for i18n websites",
+  "main": "translate.js",
+  "scripts": {
+    "start": "node --env-file=.env translate.js",
+    "reset": "git stash -- output && git clean -f -- output"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "translate-json-object": "2.3.7"
+  }
+}

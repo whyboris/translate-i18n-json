@@ -9,28 +9,38 @@ TJO.init({ googleApiKey: API_KEY });
 const sourceOfTruthFolder = './source_of_truth/';
 const filesInSourceOfTruth = getJsonFilesFromDirectory(sourceOfTruthFolder);
 const outputFolder = './output/';
-const targetLanguageFiles = getJsonFilesFromDirectory(outputFolder);
-// TODO: handle `updates` folder too
+const filesInOutputFolder = getJsonFilesFromDirectory(outputFolder);
+const updatesFolder = './updates/';
+const filesInUpdatesFolder = getJsonFilesFromDirectory(updatesFolder);
 
 const targetLanguages = [];
 
-targetLanguageFiles.forEach((file) => {
-  targetLanguages.push(removeFilename(file));
+filesInOutputFolder.forEach((file) => {
+  targetLanguages.push(removeExtension(file));
 })
 
 let sourceOfTruthPath = '';
 
-if (filesInSourceOfTruth.length === 1) {
+if (filesInSourceOfTruth.length !== 1) {
+  console.error('You must have only one .json file in the `source_of_truth` folder');
+} else if (filesInOutputFolder.length === 0 ) {
+  console.error('You must have at least one .json file in the `output` folder');
+} else if (filesInUpdatesFolder.length > 1) {
+  console.error('You must have at most one .json file in the `updates` folder');
+} else if (filesInUpdatesFolder.length && filesInUpdatesFolder[0] !== filesInSourceOfTruth[0]) {
+  console.error('The language in the `source_of_truth` folder does not match one in `updates` folder (filenames must match)');
+} else {
   sourceOfTruthPath = sourceOfTruthFolder + filesInSourceOfTruth[0];
-  sourceOfTruthLanguage = removeFilename(filesInSourceOfTruth[0]);
+  sourceOfTruthLanguage = removeExtension(filesInSourceOfTruth[0]);
   console.log('translating from:  ', sourceOfTruthPath);
-  console.log('source language:   ', removeFilename(sourceOfTruthLanguage));
+  console.log('source language:   ', removeExtension(sourceOfTruthLanguage));
   console.log('translating to: ', targetLanguages);
+  if (filesInUpdatesFolder.length === 1) {
+    console.log('Also updating all strings that are different in `updates` folder from `source_of_truth`')
+  }
   console.log('');
 
   iterateThroughTargetLanguages();
-} else {
-  console.error('You must have only one .json file in the `source_of_truth` folder');
 }
 
 async function iterateThroughTargetLanguages() {
@@ -57,8 +67,17 @@ async function translateLanguage(TARGET_LANGUAGE) {
 
   const objectToTranslate = getJsonDifference(template, toUpdate);
 
+  let onlyUpdatedStrings = {};
+  if (filesInUpdatesFolder.length === 1) {
+    const updatesFile = fs.readFileSync(updatesFolder + filesInUpdatesFolder[0]);
+    const updates = JSON.parse(updatesFile);
+    onlyUpdatedStrings = getUpdatesStrings(template, updates);
+  }
+
+  const finalFinalFinal = { ...objectToTranslate, ...onlyUpdatedStrings };
+
   try {
-    const translatedObject = await TJO.translate(objectToTranslate, TARGET_LANGUAGE)
+    const translatedObject = await TJO.translate(finalFinalFinal, TARGET_LANGUAGE)
 
     const final = mergeObjects(toUpdate, translatedObject);
 
@@ -102,7 +121,7 @@ function getJsonFilesFromDirectory(folderPath) {
   return onlyJSON
 }
 
-function removeFilename(file) {
+function removeExtension(file) {
   return file.toLowerCase().replace('.json', '')
 }
 
@@ -167,6 +186,35 @@ function mergeObjects(incompleteObject, newAdditions) {
 
   return incompleteObject;
 }
+
+
+/**
+ * Returns object with values that are different between `templateObject` and `updatesObject`
+ */
+function getUpdatesStrings(templateObject, updatesObject) {
+
+  const categories = getKeys(templateObject);
+
+  const result = {};
+
+  categories.forEach((category) => {
+
+    result[category] = {};
+
+    const names = getKeys(templateObject[category]);
+
+    names.forEach((name) => {
+
+      if (updatesObject[category] && (updatesObject[category][name] !== templateObject[category][name])) {
+        result[category][name] = updatesObject[category][name];
+      }
+
+    });
+  });
+
+  return result;
+}
+
 
 /**
  * Returns object with values that exist in `templateObject` but not in `incompleteObject`

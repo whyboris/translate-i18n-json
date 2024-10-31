@@ -7,11 +7,9 @@ _Example_ with _initial_ `en.json` language and `es.json` _target_ language:
 - _Create_ `es.json` by translating all key/value pairs found in `en.json`
 - _Add_ to `es.json` translations of any key/value pairs found in `en.json` but not present in `es.json`
 - _Remove_ from `es.json` all key/value pairs no longer present in `en.json`
-- _Update_ all strings in `es.json` that were modified in `en.json` when comparing to previous version of `en.json`
+- _Update_ all strings in `es.json` that were modified in `en.json` (`updates` folder) when comparing to a previous version of `en.json` (`source_of_truth` folder)
 
 _Note:_ above examples generalize from any _initial_ language to any _target_ languge (script can update many _target_ language files per run)
-
-⚠ **WARNING** the _update_ functionality is not yet implemented (the `updates` folder is ignored)
 
 #### Why?
 
@@ -45,21 +43,20 @@ _Note:_ you must use the [ISO-639 code](https://cloud.google.com/translate/docs/
 
 ## Recommended workflow
 
-There are two _modes_ in which this system works:
+Here is an easy way to conceputalize the script. There are two _modes_ in which this system works. Mode (1) always happens, mode (2) will happen in addition if you place a `json` file into the `updates` folder:
 
-1) You are adding or removing _new_ key/value pairs to your `json` and you want those changes to propagate to all your translations
-    - do not put any files into the `updates` folder
-2) You are _changing_ some strings (values) in the key/value pairs in your `json` and you want only those strings to be updated in all your translations
+1) You are adding or removing _new_ key/value pairs to your `json` and you want those changes to propagate to all your translations, `npm start` and you're done.
+2) You are also _changing_ some strings (values) in the key/value pairs in your `json` and you want those strings to also be updated in all your translations
     - put the original file into the `source_of_truth` folder and the updated file (with the intended text changes) into the `updates` folder
 
-The idea is this: you have your app/website repository with all your _i18n_ files in some folder. You copy all those files into this repository, putting the original language into `source_of_truth` and the rest in the `output` folder. When one day you have made changes to the language in your app/website repository, you copy over just the original language `json` into (1) or (2) depending on your need.
+The idea is this: you have your app/website repository with all your _i18n_ files in some folder. You copy all those files into this repository, putting the original language into `source_of_truth` and the rest in the `output` folder. When one day you have made changes to the language in your app/website repository, you copy over just the original language `json` into `source_of_truth` (when adding / deleting new key/value pairs) or into `updates` (when updating strings of already existing key/value pairs).
 
 - If you run script in _mode_ (1) copy all the `output` folder files back into your app/website repository when done
 - If you run script in _mode_ (2) _move_ the file from `updates` into `source_of_truth` and then _copy_ all the `output` files into your app/website repository when done
 
-This will keep the `translate-advanced` repository ready for your next updates, regardless of which mode (1) or (2) you will use.
+This will keep the `translate-i18n-json` repository ready for your next updates, regardless of which mode (1) or (2) you will use.
 
-_Note:_ the _mode_ is determined solely by the presense of a file in the `updates` folder.
+_Note:_ the _mode_ is determined solely by the presense of a file in the `updates` folder. Mode (1) always happens, and is followed by (2) if a file is present in the `updates` folder.
 
 ## Expected file format
 
@@ -71,8 +68,8 @@ Please follow this pattern:
     "title": "Best Website Ever"
   },
   "contact": {
-    "title": "Contact Us",
-    "email": "Please send us an email: hello@lol.com"
+    "email": "Please send us an email: hello@lol.com",
+    "title": "Contact Us"
   }
 }
 ```
@@ -85,4 +82,8 @@ You can test how things work by playing with the sample files already present in
 
 Running `npm run reset` will reset the `output` folder to its initial state.
 
-_Note:_ while there is a file present in the `updates` folder, only strings different from the `source_of_truth` file will be translated (_mode_ 2). Delete the file in the `updates` folder for the other functionality to work (_mode_ 1).
+_Note:_ while there is a file present in the `updates` folder, the script will also update all strings that are different from those found in the `source_of_truth` file.
+
+## Meta
+
+This code grew out of a small script that kept expanding. I don't feel like spending time organizing the code better - even though there are better ways to handle the whole process.
